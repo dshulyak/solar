@@ -10,7 +10,7 @@ from solar.core import signals
 from solar.core import validation
 from solar.core.resource import virtual_resource as vr
 from solar import errors
-from solar import events as evapi
+from solar import events
 
 from solar.interfaces.db import get_db
 
@@ -48,6 +48,14 @@ def main():
     pass
 
 
+def add_default_events(emitter, receiver):
+    evts = [
+        events.Dep(emitter.name, 'run', 'success', receiver.name, 'run'),
+        events.Dep(emitter.name, 'update', 'success', receiver.name, 'update')
+        ]
+    events.add_events(emitter.name, evts)
+
+
 def setup_resources():
     db.clear()
 
@@ -63,6 +71,7 @@ def setup_resources():
     })[0]
 
     signals.connect(node1, mariadb_service1)
+    add_default_events(node1, mariadb_service1)
 
     # RABBIT
     rabbitmq_service1 = vr.create('rabbitmq_service1', 'resources/rabbitmq_service/', {
@@ -84,10 +93,14 @@ def setup_resources():
     signals.connect(openstack_vhost, openstack_rabbitmq_user, {
         'vhost_name',
     })
+    add_default_events(node1, rabbitmq_service1)
+    add_default_events(rabbitmq_service1, openstack_vhost)
+    add_default_events(rabbitmq_service1, openstack_rabbitmq_user)
+    add_default_events(openstack_vhost, openstack_rabbitmq_user)
 
     # KEYSTONE
     keystone_puppet = vr.create('keystone_puppet', 'resources/keystone_puppet', {})[0]
-    evapi.add_dep(rabbitmq_service1.name, keystone_puppet.name, actions=('run', 'update'))
+    events.add_dep(rabbitmq_service1.name, keystone_puppet.name, actions=('run', 'update'))
     keystone_db = vr.create('keystone_db', 'resources/mariadb_db/', {
         'db_name': 'keystone_db',
         'login_user': 'root'
@@ -171,6 +184,19 @@ def setup_resources():
         'user_password': 'db_password',
         'db_host' : 'db_host'
     })
+    add_default_events(node1, keystone_db)
+    add_default_events(node1, keystone_db_user)
+    add_default_events(node1, keystone_puppet)
+    add_default_events(mariadb_service1, keystone_db)
+    add_default_events(keystone_db, keystone_db_user)
+    add_default_events(node1, keystone_service_endpoint)
+    add_default_events(keystone_puppet, keystone_service_endpoint)
+    add_default_events(keystone_puppet, admin_tenant)
+    add_default_events(admin_tenant, admin_user)
+    add_default_events(admin_user, admin_role)
+    add_default_events(keystone_puppet, services_tenant)
+    add_default_events(keystone_db, keystone_puppet)
+    add_default_events(keystone_db_user, keystone_puppet)
 
     # OPENRC
     openrc = vr.create('openrc_file', 'resources/openrc_file', {})[0]
@@ -179,6 +205,9 @@ def setup_resources():
     signals.connect(keystone_puppet, openrc, {'ip': 'keystone_host', 'admin_port':'keystone_port'})
     signals.connect(admin_user, openrc, {'user_name': 'user_name','user_password':'password', 'tenant_name': 'tenant'})
 
+    add_default_events(node1, openrc)
+    add_default_events(keystone_puppet, openrc)
+    add_default_events(admin_user, openrc)
     # NEUTRON
     # Deploy chain neutron -> (plugins) -> neutron_server -> ( agents )
     neutron_puppet = vr.create('neutron_puppet', 'resources/neutron_puppet', {
@@ -194,7 +223,10 @@ def setup_resources():
         'password': 'rabbit_password'})
     signals.connect(openstack_vhost, neutron_puppet, {
         'vhost_name': 'rabbit_virtual_host'})
-
+    add_default_events(node1, neutron_puppet)
+    add_default_events(rabbitmq_service1, neutron_puppet)
+    add_default_events(openstack_rabbitmq_user, neutron_puppet)
+    add_default_events(openstack_vhost, neutron_puppet)
     # NEUTRON API (SERVER)
     neutron_server_puppet = vr.create('neutron_server_puppet', 'resources/neutron_server_puppet', {
         'sync_db': True,
@@ -256,6 +288,20 @@ def setup_resources():
         'ip': ['admin_ip', 'internal_ip', 'public_ip'],
         'bind_port': ['admin_port', 'internal_port', 'public_port'],
     })
+    add_default_events(node1, neutron_db)
+    add_default_events(node1, neutron_db_user)
+    add_default_events(mariadb_service1, neutron_db)
+    add_default_events(mariadb_service1, neutron_db_user)
+    add_default_events(neutron_db, neutron_db_user)
+    add_default_events(neutron_db_user, neutron_server_puppet)
+    add_default_events(node1, neutron_server_puppet)
+    add_default_events(neutron_puppet, neutron_server_puppet)
+    add_default_events(admin_user, neutron_server_puppet)
+    add_default_events(keystone_puppet, neutron_server_puppet)
+    add_default_events(services_tenant, neutron_keystone_user)
+    add_default_events(neutron_keystone_user, neutron_keystone_role)
+    add_default_events(keystone_puppet, neutron_keystone_service_endpoint)
+    add_default_events(neutron_puppet, neutron_keystone_service_endpoint)
 
     # NEUTRON ML2 PLUGIN & ML2-OVS AGENT WITH GRE
     neutron_plugins_ml2 = vr.create('neutron_plugins_ml2', 'resources/neutron_plugins_ml2_puppet', {})[0]
@@ -267,6 +313,7 @@ def setup_resources():
         'local_ip': '10.1.0.13' # should be the IP addr of the br-mesh int.
     })[0]
     signals.connect(node1, neutron_agents_ml2)
+    add_default_events(node1, neutron_agents_ml2)
 
     # NEUTRON DHCP, L3, metadata agents
     neutron_agents_dhcp = vr.create('neutron_agents_dhcp', 'resources/neutron_agents_dhcp_puppet', {})[0]
@@ -285,6 +332,10 @@ def setup_resources():
         'auth_host', 'auth_port', 'auth_password',
         'auth_tenant', 'auth_user',
     })
+    add_default_events(node1, neutron_agents_dhcp)
+    add_default_events(node1, neutron_agents_l3)
+    add_default_events(node1, neutron_agents_metadata)
+    add_default_events(neutron_server_puppet, neutron_agents_metadata)
 
     # NEUTRON FOR COMPUTE (node2)
     # Deploy chain neutron -> (plugins) -> ( agents )
@@ -306,7 +357,11 @@ def setup_resources():
         'tunnel_types': ['gre'],
         'local_ip': '10.1.0.14' # Should be the IP addr of the br-mesh int.
     })[0]
+
     signals.connect(node2, neutron_agents_ml22)
+    add_default_events(node2, neutron_agents_ml22)
+    add_default_events(neutron_plugins_ovs, neutron_agents_ovs)
+    add_default_events(neutron_plugins_ovs2, neutron_agents_ovs2)
 
     # CINDER
     cinder_puppet = vr.create('cinder_puppet', 'resources/cinder_puppet', {})[0]
@@ -358,11 +413,29 @@ def setup_resources():
     signals.connect(keystone_puppet, cinder_keystone_service_endpoint, {
         'admin_port': 'keystone_admin_port', 'admin_token': 'admin_token'})
 
+    add_default_events(node1, cinder_puppet)
+    add_default_events(node1, cinder_db)
+    add_default_events(node1, cinder_db_user)
+    add_default_events(rabbitmq_service1, cinder_puppet)
+    add_default_events(admin_user, cinder_puppet)
+    add_default_events(openstack_vhost, cinder_puppet)
+    add_default_events(openstack_rabbitmq_user, cinder_puppet)
+    add_default_events(mariadb_service1, cinder_db)
+    add_default_events(mariadb_service1, cinder_db_user)
+    add_default_events(cinder_db, cinder_db_user)
+    add_default_events(cinder_db_user, cinder_puppet)
+    add_default_events(keystone_puppet, cinder_puppet)
+    add_default_events(services_tenant, cinder_keystone_user)
+    add_default_events(cinder_keystone_user, cinder_keystone_role)
+    add_default_events(cinder_keystone_user, cinder_puppet)
+    add_default_events(mariadb_service1, cinder_puppet)
+    add_default_events(cinder_puppet, cinder_keystone_service_endpoint)
+    add_default_events(keystone_puppet, cinder_keystone_service_endpoint)
     # CINDER GLANCE
     # Deploy chain: cinder_puppet -> cinder_glance -> ( cinder_api, cinder_scheduler, cinder_volume )
     cinder_glance_puppet = vr.create('cinder_glance_puppet', 'resources/cinder_glance_puppet', {})[0]
     signals.connect(node1, cinder_glance_puppet)
-
+    add_default_events(node1, cinder_glance_puppet)
     # CINDER API
     cinder_api_puppet = vr.create('cinder_api_puppet', 'resources/cinder_api_puppet', {})[0]
     signals.connect(node1, cinder_api_puppet)
@@ -371,17 +444,23 @@ def setup_resources():
     signals.connect(cinder_puppet, cinder_api_puppet, {
         'keystone_host': 'keystone_auth_host',
         'keystone_port': 'keystone_auth_port'})
-    evapi.add_react(cinder_puppet.name, cinder_api_puppet.name, actions=('update',))
+    events.add_react(cinder_puppet.name, cinder_api_puppet.name, actions=('update',))
     # CINDER SCHEDULER
     cinder_scheduler_puppet = vr.create('cinder_scheduler_puppet', 'resources/cinder_scheduler_puppet', {})[0]
     signals.connect(node1, cinder_scheduler_puppet)
     signals.connect(cinder_puppet, cinder_scheduler_puppet)
-    evapi.add_react(cinder_puppet.name, cinder_scheduler_puppet.name, actions=('update',))
+    add_default_events(node1, cinder_api_puppet)
+    add_default_events(cinder_puppet, cinder_api_puppet)
+    add_default_events(node1, cinder_scheduler_puppet)
+    add_default_events(cinder_puppet, cinder_scheduler_puppet)
+    events.add_react(cinder_puppet.name, cinder_scheduler_puppet.name, actions=('update',))
     # CINDER VOLUME
     cinder_volume_puppet = vr.create('cinder_volume_puppet', 'resources/cinder_volume_puppet', {})[0]
     signals.connect(node1, cinder_volume_puppet)
     signals.connect(cinder_puppet, cinder_volume_puppet)
-    evapi.add_react(cinder_puppet.name, cinder_volume_puppet.name, actions=('update',))
+    add_default_events(node1, cinder_volume_puppet)
+    add_default_events(cinder_puppet, cinder_volume_puppet)
+    events.add_react(cinder_puppet.name, cinder_volume_puppet.name, actions=('update',))
 
     # NOVA
     nova_puppet = vr.create('nova_puppet', 'resources/nova_puppet', {})[0]
@@ -449,6 +528,24 @@ def setup_resources():
         'port': ['admin_port', 'internal_port', 'public_port'],
         'ssh_key': 'ssh_key',
         'ssh_user': 'ssh_user'})
+    add_default_events(node1, nova_puppet)
+    add_default_events(node1, nova_db)
+    add_default_events(node1, nova_db_user)
+    add_default_events(mariadb_service1, nova_db)
+    add_default_events(mariadb_service1, nova_db_user)
+    add_default_events(admin_user, nova_puppet)
+    add_default_events(openstack_vhost, nova_puppet)
+    add_default_events(nova_db, nova_db_user)
+    add_default_events(services_tenant, nova_keystone_user)
+    add_default_events(nova_keystone_user, nova_keystone_role)
+    add_default_events(keystone_puppet, nova_puppet)
+    add_default_events(nova_keystone_user, nova_puppet)
+    add_default_events(rabbitmq_service1, nova_puppet)
+    add_default_events(openstack_rabbitmq_user, nova_puppet)
+    add_default_events(keystone_puppet, nova_keystone_service_endpoint)
+    add_default_events(mariadb_service1, nova_puppet)
+    add_default_events(nova_db_user, nova_puppet)
+    add_default_events(nova_puppet, nova_keystone_service_endpoint)
 
     # NOVA API
     nova_api_puppet = vr.create('nova_api_puppet', 'resources/nova_api_puppet', {})[0]
@@ -460,11 +557,16 @@ def setup_resources():
         'keystone_host': 'auth_host',
         'keystone_port': 'auth_port'})
     signals.connect(nova_api_puppet, neutron_agents_metadata, {'ip': 'metadata_ip'})
+    add_default_events(node1, nova_api_puppet)
+    add_default_events(nova_puppet, nova_api_puppet)
+    add_default_events(nova_api_puppet, neutron_agents_metadata)
 
     # NOVA CONDUCTOR
     nova_conductor_puppet = vr.create('nova_conductor_puppet', 'resources/nova_conductor_puppet', {})[0]
     signals.connect(node1, nova_conductor_puppet)
     signals.connect(nova_puppet, nova_conductor_puppet)
+    add_default_events(node1, nova_conductor_puppet)
+    add_default_events(nova_puppet, nova_conductor_puppet)
 
     # NOVA SCHEDULER
     # NOTE(bogdando) Generic service is used. Package and service names for Ubuntu case
@@ -492,6 +594,9 @@ def setup_resources():
     # TODO(bogdando): Make a connection for nova_puppet2.glance_api_servers = "glance_api_puppet.ip:glance_api_puppet.bind_port"
     signals.connect(node2, nova_puppet2)
     signals.connect(node2, nova_compute_puppet)
+    add_default_events(nova_puppet, nova_puppet2)
+    add_default_events(node2, nova_puppet2)
+    add_default_events(node2, nova_compute_puppet)
 
     # NOVA COMPUTE LIBVIRT, NOVA_NEUTRON
     # NOTE(bogdando): changes nova config, so should notify nova compute service
@@ -512,6 +617,10 @@ def setup_resources():
         'internal_port':'neutron_endpoint_port',
     })
 
+    add_default_events(node2, nova_neutron_puppet)
+    add_default_events(nova_puppet2, nova_compute_libvirt_puppet)
+    add_default_events(neutron_server_puppet, nova_neutron_puppet)
+    add_default_events(neutron_keystone_service_endpoint, nova_neutron_puppet)
     # signals.connect(keystone_puppet, nova_network_puppet, {'ip': 'keystone_host', 'port': 'keystone_port'})
     # signals.connect(keystone_puppet, nova_keystone_service_endpoint, {'ip': 'keystone_host', 'admin_port': 'keystone_port', 'admin_token': 'admin_token'})
     # signals.connect(rabbitmq_service1, nova_network_puppet, {'ip': 'rabbitmq_host', 'port': 'rabbitmq_port'})
@@ -566,11 +675,28 @@ def setup_resources():
         'bind_port': ['admin_port', 'internal_port', 'public_port'],})
     signals.connect(keystone_puppet, glance_keystone_service_endpoint, {
         'admin_port': 'keystone_admin_port', 'admin_token': 'admin_token'})
+    add_default_events(node1, glance_api_puppet)
+    add_default_events(node1, glance_db)
+    add_default_events(node1, glance_db_user)
+    add_default_events(admin_user, glance_api_puppet)
+    add_default_events(mariadb_service1, glance_db)
+    add_default_events(mariadb_service1, glance_db_user)
+    add_default_events(glance_db, glance_db_user)
+    add_default_events(glance_db_user, glance_api_puppet)
+    add_default_events(keystone_puppet, glance_api_puppet)
+    add_default_events(services_tenant, glance_keystone_user)
+    add_default_events(glance_keystone_user, glance_keystone_role)
+    add_default_events(glance_keystone_user, glance_api_puppet)
+    add_default_events(mariadb_service1, glance_api_puppet)
+    add_default_events(glance_api_puppet, glance_keystone_service_endpoint)
+    add_default_events(keystone_puppet, glance_keystone_service_endpoint)
 
     # GLANCE REGISTRY
     glance_registry_puppet = vr.create('glance_registry_puppet', 'resources/glance_registry_puppet', {})[0]
     signals.connect(node1, glance_registry_puppet)
     signals.connect(glance_api_puppet, glance_registry_puppet)
+    add_default_events(node1, glance_registry_puppet)
+    add_default_events(glance_api_puppet, glance_registry_puppet)
     # API and registry should not listen same ports
     # should not use the same log destination and a pipeline,
     # so disconnect them and restore the defaults
@@ -582,7 +708,6 @@ def setup_resources():
         'log_file': '/var/log/glance/registry.log',
         'pipeline': 'keystone',
     })
-
     # Update glance_api_service for cinder
     signals.connect(glance_api_puppet, cinder_glance_puppet, {
         'ip': 'glance_api_servers_host',
@@ -593,6 +718,8 @@ def setup_resources():
         'ip': 'glance_api_servers_host',
         'bind_port': 'glance_api_servers_port'
     })
+    add_default_events(glance_api_puppet, cinder_glance_puppet)
+    add_default_events(glance_api_puppet, nova_puppet2)
 
     if PROFILE:
         pr.disable()

@@ -13,7 +13,7 @@
 #    under the License.
 
 
-__all__ = ['add_dep', 'add_react']
+__all__ = ['add_dep', 'add_react', 'add_events', 'Dep', 'React']
 
 import networkx as nx
 
