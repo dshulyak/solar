@@ -21,7 +21,7 @@ import fakeredis
 class RedisDB(object):
     COLLECTIONS = Enum(
         'Collections',
-        'connection resource state_data state_log events'
+        'connection events resource state_data state_log'
     )
     DB = {
         'host': 'localhost',

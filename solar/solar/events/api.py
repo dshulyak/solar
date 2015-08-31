@@ -17,12 +17,12 @@ __all__ = ['add_dep', 'add_react']
 
 import networkx as nx
 
+from solar import core
 from solar.core.log import log
 from solar.interfaces.db import get_db
 from solar.events.controls import Dep, React, StateChange
 
 db = get_db()
-
 
 
 def create_event(event_dict):
@@ -34,32 +34,40 @@ def create_event(event_dict):
     else:
         raise Exception('No support for type %s', etype)
 
+def set_events(name, lst):
+    db.save(
+        name,
+        [i.to_dict() for i in lst],
+        collection=db.COLLECTIONS.events)
+
 
 def add_event(ev):
     rst = all_events(ev.parent_node)
-    for rev in rst:
-        if ev == rev:
-            break
-    else:
-        rst.append(ev)
-        db.create(
-            ev.parent_node,
-            [i.to_dict() for i in rst],
-            collection=db.COLLECTIONS.events)
+    if ev in rst: return
 
+    rst.append(ev)
+    set_events(ev, rst)
+
+
+def maybe_resource(name):
+    if isinstance(name, core.resource.Resource):
+        return res.name
+    else:
+        return name
 
 def add_dep(parent, dep, actions, state='success'):
+
     for act in actions:
-        d = Dep(parent, act, state=state,
-                depend_node=dep, depend_action=act)
+        d = Dep(maybe_resource(parent), act, state=state,
+                depend_node=maybe_resource(dep), depend_action=act)
         add_event(d)
         log.debug('Added event: %s', d)
 
 
 def add_react(parent, dep, actions, state='success'):
     for act in actions:
-        r = React(parent, act, state=state,
-                depend_node=dep, depend_action=act)
+        r = React(maybe_resource(parent), act, state=state,
+                  depend_node=maybe_resource(dep), depend_action=act)
         add_event(r)
         log.debug('Added event: %s', r)
 
@@ -76,10 +84,17 @@ def remove_event(ev):
     set_events(ev.parent_node, [it for it in rst if not it == ev])
 
 
-def add_events(resource, lst):
-    rst = all_events(resource)
-    rst.extend(lst)
-    set_events(resource, rst)
+def remove_event(ev):
+    rst = all_events(ev.parent_node)
+    set_events(ev.parent_node, [i.to_dict() for i in rst if i != ev])
+
+
+def add_events(name, lst):
+    rst = all_events(name)
+    for ev in lst:
+        if ev not in rst:
+            rst.append(ev)
+    set_events(name, rst)
 
 
 def all_events(resource):

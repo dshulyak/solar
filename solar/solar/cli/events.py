@@ -57,14 +57,14 @@ def add(etype, parent_node, parent_action, state, depend_node, depend_action):
 @click.argument('state')
 @click.argument('depend_node')
 @click.argument('depend_action')
-def rem(etype, parent_node, parent_action, state, depend_node, depend_action):
+def remove(etype, parent_node, parent_action, state, depend_node, depend_action):
     ev = evapi.create_event(locals())
     evapi.remove_event(ev)
 
 
 @events.command()
 @click.argument('resource')
-def trav(resource):
+def traverse(resource):
     dg = evapi.bft_events_graph(resource)
     nx.write_dot(dg, '{name}.dot'.format(name='events'))
     subprocess.call(

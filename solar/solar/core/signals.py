@@ -71,7 +71,6 @@ def connect(emitter, receiver, mapping={}, events=None):
     elif events is not False:
         add_events(emitter.name, events_to_add)
 
-
 def connect_single(emitter, src, receiver, dst):
     # Disconnect all receiver inputs
     # Check if receiver input is of list type first

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #    Copyright 2015 Mirantis, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -13,13 +14,6 @@
 #    under the License.
 
 """
-
-task should be visited only when predecessors are visited,
-visited node could be only in SUCCESS or ERROR
-
-task can be scheduled for execution if it is not yet visited, and state
-not in SKIPPED, INPROGRESS
-
 PENDING - task that is scheduled to be executed
 ERROR - visited node, but failed, can be failed by timeout
 SUCCESS - visited node, successfull
@@ -29,8 +23,7 @@ NOOP - task wont be executed, but should be treated as visited
 """
 
 from enum import Enum
-
-states = Enum('States', 'SUCCESS ERROR NOOP INPROGRESS SKIPPED PENDING')
+from .consts import states
 
 VISITED = (states.SUCCESS.name, states.ERROR.name, states.NOOP.name)
 BLOCKED = (states.INPROGRESS.name, states.SKIPPED.name)

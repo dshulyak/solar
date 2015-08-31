@@ -31,6 +31,8 @@ trigger action even if no changes noticed on dependent resource.
         - parent:update -> ok -> dependent:update
 """
 
+from solar.orchestration.consts import states
+
 
 class Event(object):
 
@@ -53,9 +55,12 @@ class Event(object):
         return '{}.{}'.format(self.depend_node, self.depend_action)
 
     def to_dict(self):
-        rst = {'etype': self.etype}
-        rst.update(self.__dict__)
-        return rst
+        return {'etype': self.etype,
+                'parent_node': self.parent_node,
+                'parent_action': self.parent_action,
+                'state': self.state,
+                'depend_node': self.depend_node,
+                'depend_action': self.depend_action}
 
     def __eq__(self, inst):
         if inst.__class__ != self.__class__:
@@ -94,7 +99,7 @@ class React(Event):
         if self.parent in changes_graph:
             if self.dependent not in changes_graph:
                 changes_graph.add_node(
-                    self.dependent, status='PENDING',
+                    self.dependent, status=states.PENDING.name,
                     errmsg=None, type='solar_resource',
                     args=[self.depend_node, self.depend_action])
 
@@ -109,6 +114,6 @@ class StateChange(Event):
     def insert(self, changed_resources, changes_graph):
         changed_resources.append(self.parent)
         changes_graph.add_node(
-            self.parent, status='PENDING',
+            self.parent, status=states.PENDING.name,
             errmsg=None, type='solar_resource',
             args=[self.parent_node, self.parent_action])
