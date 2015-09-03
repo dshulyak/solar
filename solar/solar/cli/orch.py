@@ -50,7 +50,7 @@ def report(uid):
     for item in report:
         msg = '{} -> {}'.format(item[0], item[1])
         if item[2]:
-            msg += ' :: {}'.format(item[2])
+            msg += ' :: {}'.format(item[2].encode('utf-8'))
         click.echo(click.style(msg, fg=colors[item[1]]))
 
 @orchestration.command(name='run-once')
