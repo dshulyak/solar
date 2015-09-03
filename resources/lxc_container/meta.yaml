@@ -48,6 +48,12 @@ input:
     requires:
         schema: str
         value:
+    lxc_container_template_main_apt_repo:
+        schema: str!
+        value:
+    lxc_container_template_security_apt_repo:
+        schema: str!
+        value:
     roles:
       schema: [{value: str}]
       value:

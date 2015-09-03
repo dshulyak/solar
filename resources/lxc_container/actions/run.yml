@@ -7,6 +7,8 @@
     physical_host: 10.0.0.3
     container_name: test3
     inventory_hostname: test3
+    lxc_container_template_main_apt_repo: http://security.ubuntu.com/ubuntu
+    lxc_container_template_security_apt_repo: http://security.ubuntu.com/ubuntu
     properties:
         container_release: trusty
     container_networks:
