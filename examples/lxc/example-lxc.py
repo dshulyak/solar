@@ -28,6 +28,8 @@ def lxc_template(idx):
         'mgmt_ip': '172.18.11.{}'.format(idx),
         'container_name': 'test{}'.format(idx),
         'inventory_hostname': 'test{}'.format(idx),
+        'lxc_container_template_main_apt_repo': 'http://security.ubuntu.com/ubuntu',
+        'lxc_container_template_security_apt_repo': 'http://security.ubuntu.com/ubuntu',
         'properties':
             {'container_release': 'trusty'},
         'container_networks':
@@ -100,7 +102,9 @@ def deploy():
         lxc_host_idx = vr.create(
             'lxc_host{}'.format(idx),
             'resources/lxc_container', lxc_template(idx))[0]
-        hosts_map[idx] = lxc_host_idx
+        solar_host_idx = vr.create(
+            'solar_host{}'.format(idx),
+            'resources/solar_bootstrap', {'master_ip': '10.0.0.2'})[0]
 
         signals.connect(node1, lxc_host_idx, {
             'ip': ['ansible_ssh_host', 'physical_host'],
@@ -112,6 +116,11 @@ def deploy():
         signals.connect(ssh_key, lxc_host_idx, {
             'public_key': 'pub_key',
             'private_key': 'user_key'})
+        signals.connect(lxc_host_idx, solar_host_idx, {
+            'mgmt_ip': 'ip',
+            'user_key': 'ssh_key',
+            'user': 'ssh_user'})
+        hosts_map[idx] = solar_host_idx
 
     # RABBIT
     rabbitmq_service1 = vr.create('rabbitmq_service1', 'resources/rabbitmq_service/', {
@@ -127,10 +136,7 @@ def deploy():
         'password': 'openstack_password'
     })[0]
 
-    signals.connect(hosts_map[28], rabbitmq_service1, {
-        'mgmt_ip': 'ip',
-        'user_key': 'ssh_key',
-        'user': 'ssh_user'})
+    signals.connect(hosts_map[28], rabbitmq_service1)
     signals.connect(rabbitmq_service1, openstack_vhost)
     signals.connect(rabbitmq_service1, openstack_rabbitmq_user)
     signals.connect(openstack_vhost, openstack_rabbitmq_user, {
