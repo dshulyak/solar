@@ -32,6 +32,7 @@
   - python-dev
   - python-pip
   - wget
+  - software-properties-common
 
 # PIP
 #- apt: name=python-pip state=absent
