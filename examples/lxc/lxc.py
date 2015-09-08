@@ -11,6 +11,8 @@ import click
 
 from solar.core import signals
 from solar.core.resource import virtual_resource as vr
+from solar.events.controls import React, Dep
+from solar.events.api import add_event
 
 from solar.interfaces.db import get_db
 
@@ -91,6 +93,12 @@ def deploy():
     # into containers from any node
     signals.connect(seed, vxlan_mesh1)
     signals.connect(node1, vxlan_mesh2)
+    vxlan_deps = [
+        Dep('cnets1', 'run', 'success', 'vxlan_mesh1', 'run'),
+        Dep('cnets2', 'run', 'success', 'vxlan_mesh2', 'run')
+    ]
+    for ev in vxlan_deps:
+        add_event(ev)
 
     lxc_infra1 = vr.create('lxc_infra1', 'resources/lxc_host', {})[0]
     signals.connect(node1, lxc_infra1)
@@ -113,6 +121,8 @@ def deploy():
         # and lxc container
         signals.connect(lxc_infra1, lxc_host_idx, {'provides': 'requires'})
         signals.connect(cnets2, lxc_host_idx)
+        add_event(Dep('vxlan_mesh2', 'run', 'success', lxc_host_idx.name, 'run'))
+        add_event(Dep('vxlan_mesh1', 'run', 'success', lxc_host_idx.name, 'run'))
         signals.connect(ssh_key, lxc_host_idx, {
             'public_key': 'pub_key',
             'private_key': 'user_key'})
