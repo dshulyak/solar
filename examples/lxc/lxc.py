@@ -143,8 +143,6 @@ def deploy():
         'vhost_name',
     })
 
-    print change.send_to_orchestration()
-
 main.add_command(deploy)
 
 
