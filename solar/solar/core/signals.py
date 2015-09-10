@@ -55,6 +55,21 @@ def connect(emitter, receiver, mapping={}, events=None):
         for d in dst:
             connect_single(emitter, src, receiver, d)
 
+    # possibility to set events, when False it will NOT add events at all
+    # setting events to dict with `action_name`:False will not add `action_name`
+    # event
+    events_to_add = [
+        Dependency(emitter.name, 'run', 'success', receiver.name, 'run'),
+        Dependency(emitter.name, 'update', 'success', receiver.name, 'update')
+    ]
+    if isinstance(events, dict):
+        for k, v in events.items():
+            if v is not False:
+                events_to_add = filter(lambda x: x.parent_action == k, events_to_add)
+        add_events(emitter.name, events_to_add)
+    elif events is not False:
+        add_events(emitter.name, events_to_add)
+
 
 def connect_single(emitter, src, receiver, dst):
     # Disconnect all receiver inputs
