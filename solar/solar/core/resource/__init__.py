@@ -1,3 +1,4 @@
+
 #    Copyright 2015 Mirantis, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -12,4 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from .resource import Resource, load
+
+from .resource import Resource, load, wrap_resource, load_all
+

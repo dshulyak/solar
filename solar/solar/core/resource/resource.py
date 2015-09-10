@@ -120,3 +120,7 @@ def load(name):
         raise Exception('Resource {} does not exist in DB'.format(name))
 
     return Resource(r)
+
+def load_all():
+    return [Resource(r) for r
+            in db.all(collection=db.COLLECTIONS.resource)]
