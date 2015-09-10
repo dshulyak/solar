@@ -13,6 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from solar.events.controls import Dependency
+from solar.events.api import add_events
+
 
 def guess_mapping(emitter, receiver):
     """Guess connection mapping between emitter and receiver.

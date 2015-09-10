@@ -14,5 +14,5 @@
 #    under the License.
 
 
-from .resource import Resource, load, wrap_resource, load_all
+from .resource import Resource, load, load_all
 
