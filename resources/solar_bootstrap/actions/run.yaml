@@ -3,6 +3,9 @@
 # TODO: this shouldn't be outside of the resource directory
 - include: /vagrant/bootstrap/playbooks/build-main.yml
 - hosts: all
+  tasks:
+    - wait_for: host={{ip}}
+- hosts: all
   sudo: yes
   tasks:
     - script: /vagrant/bootstrap/playbooks/files/ubuntu-ansible.sh
