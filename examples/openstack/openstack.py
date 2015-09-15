@@ -10,7 +10,7 @@ from solar.core import signals
 from solar.core import validation
 from solar.core.resource import virtual_resource as vr
 from solar import errors
-from solar import events
+from solar.events.api import add_default_events, add_react, add_dep
 
 from solar.interfaces.db import get_db
 
@@ -46,14 +46,6 @@ db = get_db()
 @click.group()
 def main():
     pass
-
-
-def add_default_events(emitter, receiver):
-    evts = [
-        events.Dep(emitter.name, 'run', 'success', receiver.name, 'run'),
-        events.Dep(emitter.name, 'update', 'success', receiver.name, 'update')
-        ]
-    events.add_events(emitter.name, evts)
 
 
 def setup_resources():
@@ -195,6 +187,7 @@ def setup_resources():
     add_default_events(admin_tenant, admin_user)
     add_default_events(admin_user, admin_role)
     add_default_events(keystone_puppet, services_tenant)
+    add_default_events(services_tenant, admin_role_services)
     add_default_events(keystone_db, keystone_puppet)
     add_default_events(keystone_db_user, keystone_puppet)
 
@@ -306,6 +299,7 @@ def setup_resources():
     # NEUTRON ML2 PLUGIN & ML2-OVS AGENT WITH GRE
     neutron_plugins_ml2 = vr.create('neutron_plugins_ml2', 'resources/neutron_plugins_ml2_puppet', {})[0]
     signals.connect(node1, neutron_plugins_ml2)
+    add_default_events(node1, neutron_plugins_ml2)
     neutron_agents_ml2 = vr.create('neutron_agents_ml2', 'resources/neutron_agents_ml2_ovs_puppet', {
         # TODO(bogdando) these should come from the node network resource
         'enable_tunneling': True,
@@ -347,10 +341,11 @@ def setup_resources():
         'rabbit_virtual_host',
         'package_ensure', 'core_plugin',
     })
-
+    add_default_events(node2, neutron_puppet2)
     # NEUTRON OVS PLUGIN & AGENT WITH GRE FOR COMPUTE (node2)
     neutron_plugins_ml22 = vr.create('neutron_plugins_ml22', 'resources/neutron_plugins_ml2_puppet', {})[0]
     signals.connect(node2, neutron_plugins_ml22)
+    add_default_events(neutron_puppet2, neutron_plugins_ml22)
     neutron_agents_ml22 = vr.create('neutron_agents_ml22', 'resources/neutron_agents_ml2_ovs_puppet', {
         # TODO(bogdando) these should come from the node network resource
         'enable_tunneling': True,
@@ -359,9 +354,7 @@ def setup_resources():
     })[0]
 
     signals.connect(node2, neutron_agents_ml22)
-    add_default_events(node2, neutron_agents_ml22)
-    add_default_events(neutron_plugins_ovs, neutron_agents_ovs)
-    add_default_events(neutron_plugins_ovs2, neutron_agents_ovs2)
+    add_default_events(neutron_puppet2, neutron_agents_ml22)
 
     # CINDER
     cinder_puppet = vr.create('cinder_puppet', 'resources/cinder_puppet', {})[0]
@@ -444,7 +437,7 @@ def setup_resources():
     signals.connect(cinder_puppet, cinder_api_puppet, {
         'keystone_host': 'keystone_auth_host',
         'keystone_port': 'keystone_auth_port'})
-    events.add_react(cinder_puppet.name, cinder_api_puppet.name, actions=('update',))
+    add_react(cinder_puppet.name, cinder_api_puppet.name, actions=('update',))
     # CINDER SCHEDULER
     cinder_scheduler_puppet = vr.create('cinder_scheduler_puppet', 'resources/cinder_scheduler_puppet', {})[0]
     signals.connect(node1, cinder_scheduler_puppet)
@@ -453,14 +446,14 @@ def setup_resources():
     add_default_events(cinder_puppet, cinder_api_puppet)
     add_default_events(node1, cinder_scheduler_puppet)
     add_default_events(cinder_puppet, cinder_scheduler_puppet)
-    events.add_react(cinder_puppet.name, cinder_scheduler_puppet.name, actions=('update',))
+    add_react(cinder_puppet.name, cinder_scheduler_puppet.name, actions=('update',))
     # CINDER VOLUME
     cinder_volume_puppet = vr.create('cinder_volume_puppet', 'resources/cinder_volume_puppet', {})[0]
     signals.connect(node1, cinder_volume_puppet)
     signals.connect(cinder_puppet, cinder_volume_puppet)
     add_default_events(node1, cinder_volume_puppet)
     add_default_events(cinder_puppet, cinder_volume_puppet)
-    events.add_react(cinder_puppet.name, cinder_volume_puppet.name, actions=('update',))
+    add_react(cinder_puppet.name, cinder_volume_puppet.name, actions=('update',))
 
     # NOVA
     nova_puppet = vr.create('nova_puppet', 'resources/nova_puppet', {})[0]
@@ -575,7 +568,7 @@ def setup_resources():
         'title' : 'scheduler', 'package_name': 'nova-scheduler', 'service_name': 'nova-scheduler',
     })[0]
     signals.connect(node1, nova_scheduler_puppet)
-
+    add_default_events(nova_puppet, nova_scheduler_puppet)
     # NOVA COMPUTE
     # Deploy chain (nova, node_networking(TODO)) -> (nova_compute_libvirt, nova_neutron) -> nova_compute
     nova_compute_puppet = vr.create('nova_compute_puppet', 'resources/nova_compute_puppet', {})[0]
@@ -816,6 +809,11 @@ resources_to_run = [
     'neutron_agents_ml22',
 ]
 
+@click.command()
+def prepare():
+    setup_resources()
+    print 'Use solar ch stage && solar ch process'
+
 
 @click.command()
 def deploy():
@@ -851,6 +849,7 @@ def undeploy():
     signals.Connections.clear()
 
 
+main.add_command(prepare)
 main.add_command(deploy)
 main.add_command(undeploy)
 

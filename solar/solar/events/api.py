@@ -35,18 +35,20 @@ def create_event(event_dict):
         raise Exception('No support for type %s', etype)
 
 def set_events(name, lst):
-    db.save(
+    db.create(
         name,
         [i.to_dict() for i in lst],
         collection=db.COLLECTIONS.events)
 
 
+
 def add_event(ev):
+
     rst = all_events(ev.parent_node)
     if ev in rst: return
 
     rst.append(ev)
-    set_events(ev, rst)
+    set_events(ev.parent_node, rst)
 
 
 def maybe_resource(name):
@@ -90,6 +92,7 @@ def remove_event(ev):
 
 
 def add_events(name, lst):
+    name = maybe_resource(name)
     rst = all_events(name)
     for ev in lst:
         if ev not in rst:
@@ -103,6 +106,14 @@ def all_events(resource):
     if not events:
         return []
     return [create_event(i) for i in events.properties]
+
+
+def add_default_events(emitter, receiver):
+    evts = [
+        events.Dep(emitter.name, 'run', 'success', receiver.name, 'run'),
+        events.Dep(emitter.name, 'update', 'success', receiver.name, 'update')
+        ]
+    events.add_events(emitter, evts)
 
 
 def bft_events_graph(start):
