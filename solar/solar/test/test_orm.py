@@ -424,11 +424,6 @@ input:
 
 class TestEventORM(BaseResourceTest):
 
-    def test_return_emtpy_set(self):
-        r = orm.DBResource(id='test1', name='test1', base_path='x')
-        r.save()
-        self.assertEqual(r.events.as_set(), set())
-
     def test_save_and_load_by_parent(self):
         ev = orm.DBEvent(
             parent='n1',
