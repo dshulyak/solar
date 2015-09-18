@@ -19,7 +19,7 @@ import networkx as nx
 from solar import utils
 from .traversal import states
 
-
+from solar.interfaces import orm
 from solar.interfaces.db import get_db
 
 db = get_db()
@@ -27,28 +27,11 @@ db = get_db()
 
 def save_graph(graph):
     # maybe it is possible to store part of information in AsyncResult backend
-    uid = graph.graph['uid']
-    db.create(uid, graph.graph, db.COLLECTIONS.plan_graph)
-
-    for n in graph:
-        collection = db.COLLECTIONS.plan_node.name + ':' + uid
-        db.create(n, properties=graph.node[n], collection=collection)
-        db.create_relation_str(uid, n, type_=db.RELATION_TYPES.graph_to_node)
-
-    for u, v, properties in graph.edges(data=True):
-        type_ = db.RELATION_TYPES.plan_edge.name + ':' + uid
-        db.create_relation_str(u, v, properties, type_=type_)
+    orm.DBGraph.create(graph)
 
 
 def get_graph(uid):
-    dg = nx.MultiDiGraph()
-    collection = db.COLLECTIONS.plan_node.name + ':' + uid
-    type_ = db.RELATION_TYPES.plan_edge.name + ':' + uid
-    dg.graph = db.get(uid, collection=db.COLLECTIONS.plan_graph).properties
-    dg.add_nodes_from([(n.uid, n.properties) for n in db.all(collection=collection)])
-    dg.add_edges_from([(i['source'], i['dest'], i['properties'])
-                       for i in db.all_relations(type_=type_, db_convert=False)])
-    return dg
+    return orm.DBGraph.load(uid).graph
 
 
 get_plan = get_graph
