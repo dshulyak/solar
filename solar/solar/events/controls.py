@@ -97,7 +97,7 @@ class React(Event):
         if self.parent_node in changes_graph:
             if self.child_node not in changes_graph:
                 changes_graph.add_node(
-                    self.child_node, status='PENDING',
+                    self.child_node, status='PENDING', name=self.child_node,
                     errmsg=None, type='solar_resource',
                     args=[self.child, self.child_action])
 
@@ -113,6 +113,6 @@ class StateChange(Event):
     def insert(self, changed_resources, changes_graph):
         changed_resources.append(self.parent)
         changes_graph.add_node(
-            self.parent_node, status='PENDING',
+            self.parent_node, status='PENDING', name=self.parent_node,
             errmsg=None, type='solar_resource',
             args=[self.parent, self.parent_action])

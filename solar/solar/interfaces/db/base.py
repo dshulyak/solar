@@ -127,12 +127,12 @@ class BaseGraphDB(object):
 
     COLLECTIONS = Enum(
         'Collections',
-        'input resource state_data state_log plan_node plan_graph events stage_log commit_log'
+        'input resource state_data state_log plan_node plan_graph plan_edge events stage_log commit_log'
     )
     DEFAULT_COLLECTION=COLLECTIONS.resource
     RELATION_TYPES = Enum(
         'RelationTypes',
-        'input_to_input resource_input plan_edge graph_to_node resource_event'
+        'input_to_input resource_input plan_to_node plan_to_edge resource_event'
     )
     DEFAULT_RELATION=RELATION_TYPES.resource_input
 

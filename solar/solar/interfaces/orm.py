@@ -583,6 +583,92 @@ class DBResource(DBObject):
         self.events.add(event)
 
 
+class DBGraph(DBObject):
+
+    __metaclass__ = DBObjectMeta
+    _collection = base.BaseGraphDB.COLLECTIONS.plan_graph
+
+    id = db_field('str!', is_primary=True)
+    name = db_field('str')
+    nodes = db_related_field(base.BaseGraphDB.RELATION_TYPES.plan_to_node,
+                             'DBPlanNode')
+    edges = db_related_field(base.BaseGraphDB.RELATION_TYPES.plan_to_edge,
+                             'DBPlanEdge')
+
+    def graph(self):
+        mdg = nx.MultiDiGraph()
+        mdg.graph = {'id': self.id,
+                     'name': self.name}
+        for node in self.nodes.as_set():
+            mdg.add_node(node.name, **node.properties)
+        for edge in self.edges.as_set():
+            mdg.add_edge(edge.source, edge.dest)
+        return mdg
+
+    @classmethod
+    def create(cls, graph):
+        db_graph = DBGraph(
+            id=graph.graph['id'],
+            name=graph.graph['name'])
+        db_graph.save()
+
+        for n in graph.nodes():
+            db_graph.add_node(graph[n])
+
+        for u, v in graph.edges():
+            db_graph.add_edge(u, v)
+
+        return db_graph
+
+    def add_node(self, node):
+        db_node = DBPlanNode(**node)
+        db_node.save()
+        self.nodes.add(db_node)
+
+    def add_edge(self, src, dst):
+        db_edge = DBPlanEdge(source=src, dest=dst)
+        db_edge.save()
+        self.edges.add(db_edge)
+
+    def update(self, new):
+        raise NotImplementedError
+
+    def delete(self):
+        db.delete_relations(
+            source=self._db_node,
+            type_=base.BaseGraphDB.RELATION_TYPES.plan_to_node
+        )
+        db.delete_relations(
+            source=self._db_node,
+            type_=base.BaseGraphDB.RELATION_TYPES.plan_to_edge
+        )
+        super(DBEvent, self).delete()
+
+
+class DBPlanNode(DBObject):
+
+    __metaclass__ = DBObjectMeta
+    _collection = base.BaseGraphDB.COLLECTIONS.plan_node
+
+    id = db_field(is_primary=True)
+    name = db_field('str!')
+    state = db_field('str!')
+    errmsg = db_field('str')
+    args = db_field()
+    task_type = db_field()
+    target = db_field()
+
+
+class DBPlanEdge(DBObject):
+
+    __metaclass__ = DBObjectMeta
+    _collection = base.BaseGraphDB.COLLECTIONS.plan_edge
+
+    source = db_field('str!')
+    dest = db_field('str!')
+    state = db_field('str!')
+
+
 # TODO: remove this
 if __name__ == '__main__':
     r = DBResource(name=1)

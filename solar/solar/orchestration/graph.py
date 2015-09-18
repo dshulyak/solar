@@ -62,6 +62,7 @@ def parse_plan(plan_path):
     dg.graph['name'] = plan['name']
     for task in plan['tasks']:
         defaults = {
+            'name': task['uid'],
             'status': 'PENDING',
             'errmsg': None,
             }
