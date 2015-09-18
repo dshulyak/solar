@@ -512,6 +512,29 @@ class DBEvent(DBObject):
 
 
 
+class DBEvent(DBObject):
+
+    __metaclass__ = DBObjectMeta
+
+    _collection = base.BaseGraphDB.COLLECTIONS.events
+
+    id = db_field(is_primary=True)
+    parent = db_field(schema='str!')
+    parent_action = db_field(schema='str!')
+    etype = db_field('str!')
+    state = db_field('str')
+    child = db_field('str')
+    child_action = db_field('str')
+
+    def delete(self):
+        db.delete_relations(
+            dest=self._db_node,
+            type_=base.BaseGraphDB.RELATION_TYPES.resource_event
+        )
+        super(DBEvent, self).delete()
+
+
+
 class DBResource(DBObject):
     __metaclass__ = DBObjectMeta
 
