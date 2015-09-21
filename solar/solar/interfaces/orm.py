@@ -512,29 +512,6 @@ class DBEvent(DBObject):
 
 
 
-class DBEvent(DBObject):
-
-    __metaclass__ = DBObjectMeta
-
-    _collection = base.BaseGraphDB.COLLECTIONS.events
-
-    id = db_field(is_primary=True)
-    parent = db_field(schema='str!')
-    parent_action = db_field(schema='str!')
-    etype = db_field('str!')
-    state = db_field('str')
-    child = db_field('str')
-    child_action = db_field('str')
-
-    def delete(self):
-        db.delete_relations(
-            dest=self._db_node,
-            type_=base.BaseGraphDB.RELATION_TYPES.resource_event
-        )
-        super(DBEvent, self).delete()
-
-
-
 class DBResource(DBObject):
     __metaclass__ = DBObjectMeta
 
@@ -589,12 +566,16 @@ class DBPlanNode(DBObject):
     _collection = base.BaseGraphDB.COLLECTIONS.plan_node
 
     id = db_field(is_primary=True)
-    name = db_field('str!')
+    # NOTE(dshulyak) `name` conflicts with internal usage of networkx keywords
+    # in pydot
+    node_name = db_field('str!')
     status = db_field('str!')
     errmsg = db_field('str')
     args = db_field()
     type = db_field()
     target = db_field()
+    start_time = db_field()
+    end_time = db_field()
 
 
 class DBPlanEdge(DBObject):
@@ -626,7 +607,7 @@ class DBGraph(DBObject):
         mdg.graph = {'uid': self.id,
                      'name': self.name}
         for node in self.nodes.as_set():
-            mdg.add_node(node.name, **node.to_dict())
+            mdg.add_node(node.node_name, **node.to_dict())
         for edge in self.edges.as_set():
             mdg.add_edge(edge.source, edge.dest)
         return mdg
