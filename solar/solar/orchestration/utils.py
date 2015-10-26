@@ -29,8 +29,10 @@ def write_graph(plan):
         'SKIPPED': 'blue'}
 
     for n in plan:
-        color = colors[plan.node[n]['status']]
-        plan.node[n]['color'] = color
+        status = plan.node[n].get('status')
+        if status:
+            color = colors[status]
+            plan.node[n]['color'] = color
 
     nx.write_dot(plan, '{name}.dot'.format(name=plan.graph['name']))
     subprocess.call(

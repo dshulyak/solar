@@ -85,7 +85,8 @@ class Resource(object):
             'puppet_module': metadata.get('puppet_module', ''),
             'version': metadata.get('version', ''),
             'meta_inputs': inputs,
-            'tags': tags
+            'tags': tags,
+            'type': metadata.get('id', ''),
 
         })
         self.db_obj.state = RESOURCE_STATE.created.name
@@ -101,6 +102,10 @@ class Resource(object):
         self.name = resource_db.name
         self.base_path = resource_db.base_path
         self.virtual_resource = None
+
+    @property
+    def type(self):
+        return self.db_obj.type
 
     def auto_extend_inputs(self, inputs):
         # XXX: we didn't agree on `location_id` and `transports_id`

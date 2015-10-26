@@ -181,6 +181,19 @@ def dg(uid, start, end):
     utils.write_graph(plan)
     click.echo('Created {name}.svg'.format(name=plan.graph['name']))
 
+@orchestration.command()
+@click.argument('uid', type=SOLARUID)
+def rdg(uid):
+    import networkx as nx
+    plan = graph.get_graph(uid)
+    reduced = nx.DiGraph()
+    reduced.graph['name'] = 'reduced_' + plan.graph['name']
+    for u, v in plan.edges():
+        u = '{}.{}'.format(plan.node[u]['resource_type'], plan.node[u]['action'])
+        v = '{}.{}'.format(plan.node[v]['resource_type'], plan.node[v]['action'])
+        reduced.add_edge(u, v)
+    utils.write_graph(reduced)
+    click.echo('Created {name}.svg'.format(name=reduced.graph['name']))
 
 @orchestration.command()
 @click.argument('uid', type=SOLARUID)

@@ -102,14 +102,15 @@ class React(Event):
                     loaded_resource = resource.load(self.child)
                 except KeyError:
                     # orm throws this error when we're NOT using resource there
-                    location_id = None
+                    kwargs = {}
                 else:
-                    location_id = loaded_resource.args['location_id']
+                    kwargs = {'target': loaded_resource.args['location_id'],
+                              'resource_type': loaded_resource.type}
                 changes_graph.add_node(
                     self.child_node, status='PENDING',
-                    target=location_id,
                     errmsg=None, type='solar_resource',
-                    args=[self.child, self.child_action])
+                    action=self.child_action,
+                    args=[self.child, self.child_action], **kwargs)
 
             changes_graph.add_edge(
                 self.parent_node, self.child_node, state=self.state)
@@ -128,11 +129,13 @@ class StateChange(Event):
             loaded_resource = resource.load(self.parent)
         except KeyError:
             # orm throws this error when we're NOT using resource there
-            location_id = None
+            kwargs = {}
         else:
-            location_id = loaded_resource.args['location_id']
+
+            kwargs = {'target': loaded_resource.args['location_id'],
+                      'resource_type': loaded_resource.type}
         changes_graph.add_node(
             self.parent_node, status='PENDING',
-            target=location_id,
             errmsg=None, type='solar_resource',
-            args=[self.parent, self.parent_action])
+            action=self.parent_action,
+            args=[self.parent, self.parent_action], **kwargs)
