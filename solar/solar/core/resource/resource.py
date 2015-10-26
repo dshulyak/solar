@@ -14,6 +14,7 @@
 #    under the License.
 
 from enum import Enum
+import atexit
 
 from copy import deepcopy
 from multipledispatch import dispatch
@@ -23,12 +24,15 @@ from solar import utils
 
 from solar.core import validation
 from solar.interfaces import orm
+from solar.interfaces.db import get_db
 from solar.core import signals
 from solar.events import api
 
 from uuid import uuid4
 from hashlib import md5
 
+
+db = get_db()
 
 
 def read_meta(base_path):
@@ -47,8 +51,25 @@ def read_meta(base_path):
 RESOURCE_STATE = Enum('ResourceState', 'created operational removed error updated')
 
 
+DIRTY = set()
+
+class DirtyResources(object):
+
+    def __init__(self):
+        self.resources = set()
+
+    def commit(self):
+        for res in self.resources:
+            inst = load(res)
+            inst.cached_args = inst.args
+
+dirty = DirtyResources()
+atexit.register(dirty.commit)
+
 class Resource(object):
     _metadata = {}
+
+    cached_args = db.get_resource_args()
 
     # Create
     @dispatch(basestring, basestring)
@@ -168,6 +189,19 @@ class Resource(object):
             i.value = v
             i.save()
 
+        self.cached_args = self.args
+
+        dirty.resources.add(self.name)
+        for child in self.db_obj.childs():
+            dirty.resources.add(child)
+            self.recursive_update(load(child))
+
+    def recursive_update(self, resource):
+        for child in self.db_obj.childs():
+            if child not in dirty.resources:
+                dirty.resources.add(child)
+                self.recursive_update(load(child))
+
     def delete(self):
         return self.db_obj.delete()
 
@@ -259,6 +293,7 @@ class Resource(object):
     def connect_with_events(self, receiver, mapping=None, events=None,
             use_defaults=False):
         signals.connect(self, receiver, mapping=mapping)
+        self.recursive_update(receiver)
         if use_defaults:
             api.add_default_events(self, receiver)
         if events:

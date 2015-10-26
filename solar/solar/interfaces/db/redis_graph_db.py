@@ -6,7 +6,7 @@ import redis
 import fakeredis
 
 from .base import BaseGraphDB, Node, Relation
-from .redis_db import OrderedHash
+from .redis_db import OrderedHash, CachedResourceArgs
 
 
 class RedisGraphDB(BaseGraphDB):
@@ -294,6 +294,8 @@ class RedisGraphDB(BaseGraphDB):
     def get_ordered_hash(self, collection):
         return OrderedHash(self._r, collection)
 
+    def get_resource_args(self):
+        return CachedResourceArgs(self._r)
 
 class FakeRedisGraphDB(RedisGraphDB):
 

@@ -27,6 +27,7 @@ from solar.core.log import log
 from solar import errors
 from solar.interfaces import orm
 from solar import utils
+import pprint
 
 from solar.cli import executors
 
@@ -90,6 +91,12 @@ def backtrack_inputs(resource):
 
     for i in r.resource_inputs().values():
         click.echo(yaml.safe_dump({i.name: backtrack(i)}, default_flow_style=False))
+
+@resource.command()
+@click.argument('resource')
+def cargs(resource):
+
+    click.echo(pprint.pprint(sresource.load(resource).cached_args))
 
 @resource.command()
 def compile_all():

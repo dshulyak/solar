@@ -151,6 +151,22 @@ class OrderedHash(object):
         return result
 
 
+class CachedResourceArgs(object):
+
+    collection = 'resource_args'
+
+    def __init__(self, client):
+        self.r = client
+
+    def __get__(self, resource, _=None):
+        return json.loads(self.r.get(self.key(resource.name)))
+
+    def key(self, resource_name):
+        return '{}:{}'.format(self.collection, resource_name)
+
+    def __set__(self, resource, value):
+        self.r.set(self.key(resource.name), json.dumps(value))
+
 class FakeRedisDB(RedisDB):
 
     REDIS_CLIENT = fakeredis.FakeStrictRedis

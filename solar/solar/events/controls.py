@@ -104,7 +104,7 @@ class React(Event):
                     # orm throws this error when we're NOT using resource there
                     location_id = None
                 else:
-                    location_id = loaded_resource.args['location_id']
+                    location_id = loaded_resource.cached_args['location_id']
                 changes_graph.add_node(
                     self.child_node, status='PENDING',
                     target=location_id,
@@ -130,7 +130,7 @@ class StateChange(Event):
             # orm throws this error when we're NOT using resource there
             location_id = None
         else:
-            location_id = loaded_resource.args['location_id']
+            location_id = loaded_resource.cached_args['location_id']
         changes_graph.add_node(
             self.parent_node, status='PENDING',
             target=location_id,

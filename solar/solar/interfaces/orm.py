@@ -502,6 +502,16 @@ class DBResourceInput(DBObject):
             dest = DBResourceInput(**relation.end_node.properties)
             yield source, dest, meta
 
+    def childs(self):
+        out = db.get_relations(
+                source=self._db_node,
+                type_=base.BaseGraphDB.RELATION_TYPES.input_to_input)
+        for relation in out:
+            meta = relation.properties
+            source = DBResourceInput(**relation.start_node.properties)
+            dest = DBResourceInput(**relation.end_node.properties)
+            yield source, dest, meta
+
     def check_other_val(self, other_val=None):
         if not other_val:
             return self
@@ -721,6 +731,13 @@ class DBResource(DBObject):
             mdg.add_edges_from(input.edges())
         return mdg
 
+    def childs(self):
+        rst = set()
+        for input in self.inputs.as_list():
+            for _, dst, _ in input.childs():
+                rst.add(dst.resource.name)
+        return rst
+
     def add_tags(self, *tags):
         self.tags = list(set(self.tags) | set(tags))
         self.save()
@@ -728,6 +745,8 @@ class DBResource(DBObject):
     def remove_tags(self, *tags):
         self.tags = list(set(self.tags) - set(tags))
         self.save()
+
+
 
 # TODO: remove this
 if __name__ == '__main__':
