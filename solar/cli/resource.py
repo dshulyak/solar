@@ -262,3 +262,17 @@ def remove(name, tag, f):
             click.echo('Resource %s removed from database' % res.name)
         else:
             click.echo('Resource %s will be removed after commiting changes.' % res.name)
+
+
+@resource.command()
+@click.option('--name', '-n')
+@click.option('--tag', '-t', multiple=True)
+def prefetch(name, tag):
+    if name:
+        resources = [sresource.load(name)]
+    elif tag:
+        resources = sresource.load_by_tags(set(tag))
+
+    for res in resources:
+        res.prefetch()
+        click.echo(res.color_repr())

@@ -18,6 +18,7 @@ from enum import Enum
 from copy import deepcopy
 from multipledispatch import dispatch
 import os
+import json
 
 from solar import utils
 
@@ -94,7 +95,8 @@ class Resource(object):
                 'version': metadata.get('version', ''),
                 'meta_inputs': inputs,
                 'tags': tags,
-                'state': RESOURCE_STATE.created.name
+                'state': RESOURCE_STATE.created.name,
+                'manager': metadata.get('manager')
             })
         self.create_inputs(args)
 
@@ -291,6 +293,15 @@ class Resource(object):
         receiver.db_obj.save_lazy()
         self.db_obj.save_lazy()
 
+    def prefetch(self):
+        if not self.db_obj.manager:
+            return
+
+        manager_path = os.path.join(
+            self.db_obj.base_path, self.db_obj.manager)
+        data = json.dumps(self.args)
+        rst = utils.communicate([manager_path], data)
+        self.update(json.loads(rst))
 
 
 def load(name):
