@@ -21,7 +21,7 @@ RUN pip install riak peewee
 RUN pip install -U setuptools>=17.1
 RUN cd /solar && python setup.py install
 RUN cd /solard && python setup.py install
-RUN ansible-playbook -v -i "localhost," -c local /celery.yaml --skip-tags slave
+RUN ansible-playbook -v -i "localhost," -c local /celery.yaml --skip-tags slave,stop
 RUN pip install -U python-fuelclient
 
 CMD ["/run.sh"]
