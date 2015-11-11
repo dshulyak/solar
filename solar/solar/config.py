@@ -73,8 +73,8 @@ class Conf(object):
 
 C = Conf()
 C.add('redis.port', default='6379')
-C.add('redis.host', default='10.0.0.2')
-C.add('riak.host', default='10.0.0.2')
+C.add('redis.host', default='redis')
+C.add('riak.host', default='riak')
 C.add('riak.port', default='8087')
 C.add('riak.protocol', default='pbc')
 C.init_env()
