@@ -23,5 +23,8 @@ RUN cd /solar && python setup.py install
 RUN cd /solard && python setup.py install
 RUN ansible-playbook -v -i "localhost," -c local /celery.yaml --skip-tags slave,stop
 RUN pip install -U python-fuelclient
+RUN apt-get install -y puppet
+RUN gem install hiera
+RUN mkdir -p /etc/puppet/hieradata/
 
 CMD ["/run.sh"]
