@@ -1,17 +1,20 @@
-solar-celery:
+solar:
   image: solarproject/solar-celery
   # path inside of the container should be exactly the same as outside
   # because solar uses absolute path to find resoruce actions files
   volumes:
-    - /vagrant/.vagrant:/vagrant/.vagrant
-    - /vagrant/solar:/solar
-    - /vagrant/solard:/solard
-    - /vagrant/templates:/vagrant/templates
-    - /vagrant/resources:/vagrant/resources
+    - ./.vagrant:/vagrant/.vagrant
+    - ./solar:/solar
+    - ./solard:/solard
+    - ./templates:/vagrant/templates
+    - ./resources:/vagrant/resources
+    - ./f2s:/vagrant/f2s
+    - /var/lib/fuel:/var/lib/fuel
+    - /etc/fuel/:/etc/fuel
   environment:
-    - REDIS_HOST=10.0.0.2
+    - REDIS_HOST=redis
     - REDIS_PORT=6379
-    - RIAK_HOST=10.0.0.2
+    - RIAK_HOST=riak
     - RIAK_PORT=8087
   # links are not used for configuration because we can rely on non-container
   # based datastores

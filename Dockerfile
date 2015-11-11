@@ -13,6 +13,7 @@ ADD solard /solard
 ADD resources /resources
 ADD templates /templates
 ADD run.sh /run.sh
+ADD f2s /f2s
 
 
 RUN apt-get install -y libffi-dev libssl-dev
@@ -21,5 +22,6 @@ RUN pip install -U setuptools>=17.1
 RUN cd /solar && python setup.py install
 RUN cd /solard && python setup.py install
 RUN ansible-playbook -v -i "localhost," -c local /celery.yaml --skip-tags slave
+RUN pip install -U python-fuelclient
 
 CMD ["/run.sh"]
