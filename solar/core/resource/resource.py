@@ -271,7 +271,6 @@ class Resource(object):
         self.db_obj.save_lazy()
         receiver.db_obj.save_lazy()
 
-
     def connect_with_events(self, receiver, mapping=None, events=None,
             use_defaults=False):
         mapping = get_mapping(self, receiver, mapping)
