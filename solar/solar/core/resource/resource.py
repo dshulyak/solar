@@ -270,6 +270,7 @@ class Resource(object):
             mapping = dict((x, x) for x in mapping)
         self.db_obj.connect(receiver.db_obj, mapping=mapping)
         self.db_obj.save_lazy()
+        receiver.db_obj.save()
 
     def connect_with_events(self, receiver, mapping=None, events=None,
             use_defaults=False):
