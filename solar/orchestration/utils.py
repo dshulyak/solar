@@ -26,7 +26,8 @@ def write_graph(plan):
         'ERROR': 'red',
         'SUCCESS': 'green',
         'INPROGRESS': 'yellow',
-        'SKIPPED': 'blue'}
+        'SKIPPED': 'blue',
+        'NOOP': 'black'}
 
     for n in plan:
         color = colors[plan.node[n]['status']]
