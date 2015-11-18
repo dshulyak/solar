@@ -68,6 +68,7 @@ report_task = partial(app.task, base=ReportTask, bind=True)
 
 
 @report_task(name='solar_resource')
+@session
 def solar_resource(ctxt, resource_name, action):
     res = resource.load(resource_name)
     return actions.resource_action(res, action)
