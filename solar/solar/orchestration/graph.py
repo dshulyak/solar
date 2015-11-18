@@ -24,6 +24,7 @@ from solar import errors
 from collections import Counter
 
 from solar.dblayer.solar_models import Task
+from solar.dblayer.model import ModelMeta
 
 
 def save_graph(graph):
@@ -54,6 +55,14 @@ def update_graph(graph):
         task.errmsg = graph.node[n]['errmsg'] or ''
         task.save()
 
+def set_states(uid, tasks):
+    plan = get_graph(uid)
+    for t in tasks:
+        if t not in plan.node:
+            raise Exception("No task %s in plan %s", t, uid)
+        plan.node[t]['task'].status = states.NOOP.name
+        plan.node[t]['task'].save_lazy()
+    ModelMeta.save_all_lazy()
 
 def get_graph(uid):
     dg = nx.MultiDiGraph()
