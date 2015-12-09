@@ -17,8 +17,10 @@ import pytest
 
 from solar.dblayer.model import check_state_for
 from solar.dblayer.model import StrInt
+from solar.dblayer.model import clear_cache
 from solar.dblayer.solar_models import DBLayerSolarException
 from solar.dblayer.solar_models import Resource
+from solar.dblayer.solar_models import Lock
 
 
 def create_resource(key, data):
@@ -681,3 +683,16 @@ def test_connect_other_list(rk):
     Resource.save_all_lazy()
 
     assert r1.inputs['config']['trackers'] == ["t1", "t2"]
+
+
+def test_fail_on_write(rk):
+    uid = next(rk)
+    lock = Lock.from_dict(uid, {'identity': uid})
+    lock.save()
+    clear_cache()
+
+    with pytest.raises(RuntimeError):
+        lock1 = Lock.from_dict(uid, {'identity': uid})
+        lock1.save()
+    s1, s2 = lock1._riak_object.siblings
+    assert s1.data == s2.data
