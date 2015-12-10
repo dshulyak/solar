@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import subprocess
+import threading
 import uuid
 
 from jinja2 import Environment
@@ -154,5 +155,8 @@ def solar_map(funct, args, **kwargs):
 
 
 def get_local():
-    import threading
     return threading.local
+
+
+def get_current_ident():
+    return threading.currentThread().ident

@@ -27,6 +27,7 @@ def patch_all():
     from solar.dblayer.model import Model
 
     from solar.dblayer.gevent_helpers import get_local
+    from solar.dblayer.gevent_helpers import get_current_ident
     from solar.dblayer.gevent_helpers import multi_get
     from solar.dblayer.gevent_helpers import solar_map
     from solar import utils
@@ -35,4 +36,5 @@ def patch_all():
 
     _patch(utils, 'solar_map', solar_map)
     _patch(utils, 'get_local', get_local)
+    _patch(utils, 'get_current_ident', get_current_ident)
     _patch(Model, '_local', get_local()())
