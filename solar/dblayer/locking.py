@@ -77,7 +77,7 @@ class Lock(object):
                 time.sleep(self.wait)
                 lk = self._acquire(self.uid, self.identity)
                 self.retries -= 1
-                if lk.identity != self.identity:
+                if lk.identity == self.identity:
                     break
             else:
                 if lk.identity != self.identity:
