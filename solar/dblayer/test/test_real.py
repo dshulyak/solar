@@ -15,6 +15,7 @@
 from __future__ import print_function
 import pytest
 
+from solar.dblayer.conflict_resolution import SiblingsError
 from solar.dblayer.model import check_state_for
 from solar.dblayer.model import StrInt
 from solar.dblayer.model import clear_cache
@@ -691,7 +692,8 @@ def test_return_siblings_on_write(rk):
     lock.save()
     clear_cache()
 
-    lock1 = Lock.from_dict(uid, {'identity': uid})
-    lock1.save()
+    with pytest.raises(SiblingsError):
+        lock1 = Lock.from_dict(uid, {'identity': uid})
+        lock1.save()
     s1, s2 = lock1._riak_object.siblings
     assert s1.data == s2.data
