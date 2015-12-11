@@ -685,14 +685,13 @@ def test_connect_other_list(rk):
     assert r1.inputs['config']['trackers'] == ["t1", "t2"]
 
 
-def test_fail_on_write(rk):
+def test_return_siblings_on_write(rk):
     uid = next(rk)
     lock = Lock.from_dict(uid, {'identity': uid})
     lock.save()
     clear_cache()
 
-    with pytest.raises(RuntimeError):
-        lock1 = Lock.from_dict(uid, {'identity': uid})
-        lock1.save()
+    lock1 = Lock.from_dict(uid, {'identity': uid})
+    lock1.save()
     s1, s2 = lock1._riak_object.siblings
     assert s1.data == s2.data

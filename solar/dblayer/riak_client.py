@@ -30,9 +30,9 @@ class RiakClient(OrigRiakClient):
     def delete_all(self, cls):
         for _ in xrange(10):
             # riak dislikes deletes without dvv
-            rst = cls.bucket.get_index('$bucket',
-                                       startkey='_',
-                                       max_results=100000).results
+            # bitcast doesnt support indexes, and we need
+            # to use mutlibackends
+            rst = cls.bucket.get_keys()
             for key in rst:
                 cls.bucket.delete(key)
             else:

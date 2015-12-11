@@ -15,12 +15,16 @@
 from contextlib import contextmanager
 import time
 
+from solar.core.log import log
+
 from solar.dblayer.solar_models import Lock as DBLock
+from solar.dblayer.conflict_resolution import SiblingsError
+from solar.dblayer.model import DBLayerNotFound
 
 
 class Lock(object):
 
-    def __init__(self, uid, identity, retries=0, wait=10):
+    def __init__(self, uid, identity, retries=0, wait=1):
         """
         :param uid: target of lock
         :param identity: unit of concurrency
@@ -35,10 +39,21 @@ class Lock(object):
     @classmethod
     def _acquire(cls, uid, identity):
         try:
-            lk = DBLock.from_dict(uid, {'identity': identity})
-            lk.save()
-            # we should have another exception for siblings
-        except RuntimeError:
+            try:
+                lk = DBLock.get(uid)
+                log.debug(
+                    'Found lock with UID %s, owned by %s, owner %r',
+                    uid, lk.identity, lk.identity == identity)
+            except DBLayerNotFound:
+                log.debug(
+                    'Create lock UID %s for %s', uid, identity)
+                lk = DBLock.from_dict(uid, {'identity': identity})
+                lk.save()
+        except SiblingsError:
+            log.debug('Race condition for lock with UID %s, among %r',
+                uid,
+                [s.data.get('identity') for s
+                 in lk._riak_object.siblings])
             siblings = []
             for s in lk._riak_object.siblings:
                 if s.data.get('identity') != identity:
@@ -50,11 +65,14 @@ class Lock(object):
     @classmethod
     def _release(cls, uid):
         lk = DBLock.get(uid)
+        log.debug('Release lock %s with %s', uid, lk.identity)
         lk.delete()
 
     def __enter__(self):
         lk = self._acquire(self.uid, self.identity)
         if lk.identity != self.identity:
+            log.debug('Lock %s acquired by another ideneity %s != %s',
+                self.uid, self.identity, lk.identity)
             while self.retries:
                 time.sleep(self.wait)
                 lk = self._acquire(self.uid, self.identity)
@@ -62,8 +80,10 @@ class Lock(object):
             else:
                 if lk.identity != self.identity:
                     raise RuntimeError(
-                        'Lock for {} is acquired by identity {}'.format(
+                        'Failed to acquire {},'
+                        ' owned by identity {}'.format(
                             lk.key, lk.identity))
+        log.debug('Lock for %s acquired by %s', self.uid, self.identity)
 
     def __exit__(self, *err):
         self._release(self.uid)
