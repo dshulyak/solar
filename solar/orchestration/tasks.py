@@ -22,9 +22,9 @@ from celery.signals import task_postrun
 from celery.signals import task_prerun
 
 from solar.core import actions
+from solar.core.log import log
 from solar.core import resource
 from solar.dblayer import ModelMeta
-from solar.core.log import log
 from solar.orchestration import executor
 from solar.orchestration import graph
 from solar.orchestration import limits

@@ -17,11 +17,11 @@ import pytest
 
 from solar.dblayer.conflict_resolution import SiblingsError
 from solar.dblayer.model import check_state_for
-from solar.dblayer.model import StrInt
 from solar.dblayer.model import clear_cache
+from solar.dblayer.model import StrInt
 from solar.dblayer.solar_models import DBLayerSolarException
-from solar.dblayer.solar_models import Resource
 from solar.dblayer.solar_models import Lock
+from solar.dblayer.solar_models import Resource
 
 
 def create_resource(key, data):

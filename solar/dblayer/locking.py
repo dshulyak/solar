@@ -12,25 +12,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from contextlib import contextmanager
 import time
 
 from solar.core.log import log
 
-from solar.dblayer.solar_models import Lock as DBLock
 from solar.dblayer.conflict_resolution import SiblingsError
 from solar.dblayer.model import DBLayerNotFound
+from solar.dblayer.solar_models import Lock as DBLock
 
 
 class Lock(object):
 
     def __init__(self, uid, identity, retries=0, wait=1):
-        """
+        """Storage based lock mechanism
+
         :param uid: target of lock
         :param identity: unit of concurrency
         :param retries: retries of acquiring lock
         :param wait: sleep between retries
         """
+
         self.uid = uid
         self.identity = identity
         self.retries = retries
@@ -50,10 +51,10 @@ class Lock(object):
                 lk = DBLock.from_dict(uid, {'identity': identity})
                 lk.save()
         except SiblingsError:
-            log.debug('Race condition for lock with UID %s, among %r',
+            log.debug(
+                'Race condition for lock with UID %s, among %r',
                 uid,
-                [s.data.get('identity') for s
-                 in lk._riak_object.siblings])
+                [s.data.get('identity') for s in lk._riak_object.siblings])
             siblings = []
             for s in lk._riak_object.siblings:
                 if s.data.get('identity') != identity:
@@ -71,7 +72,8 @@ class Lock(object):
     def __enter__(self):
         lk = self._acquire(self.uid, self.identity)
         if lk.identity != self.identity:
-            log.debug('Lock %s acquired by another ideneity %s != %s',
+            log.debug(
+                'Lock %s acquired by another ideneity %s != %s',
                 self.uid, self.identity, lk.identity)
             while self.retries:
                 time.sleep(self.wait)

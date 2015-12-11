@@ -196,7 +196,5 @@ def show(uid):
 @orchestration.command(name='release-lock')
 @click.argument('uid', type=SOLARUID)
 def release_lock(uid):
-    """
-    Use this if worker was killed, and lock wasnt released properly.
-    """
+    """Use if worker was killed, and lock wasnt released properly. """
     Lock._release(uid)
