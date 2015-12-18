@@ -322,13 +322,13 @@ def diff(s, c, u):
         cops_hash = {}
         for rule in crules:
             for o in rule:
-                cops_hash[o] = o
+                cops_hash[o.identity] = o
     elif u:
         crules = map(lambda r: r[0](UPDATED), RULES.values())
         cops_hash = {}
         for rule in crules:
             for o in rule:
-                cops_hash[o] = o
+                cops_hash[o.identity] = o
     else:
         cops_hash = {}
 
@@ -337,16 +337,20 @@ def diff(s, c, u):
         sops_hash = {}
         for rule in srules:
             for o in rule:
-                sops_hash[o] = o
+                sops_hash[o.identity] = o
     else:
         sops_hash = {}
     rst = []
-    for operation in set(cops_hash.keys() + sops_hash.keys()):
-        cop = cops_hash.get(operation)
-        sop = sops_hash.get(operation)
+    for identity in set(cops_hash.keys() + sops_hash.keys()):
+        cop = cops_hash.get(identity)
+        sop = sops_hash.get(identity)
         if sop and not cop:
             rst.append(sop)
         elif cop and not sop:
+            inv = cop.inverse
+            if isinstance(inv, Disconnect):
+                if inv.subscriber == 'controller.1':
+                    import ipdb; ipdb.set_trace()
             rst.append(cop.inverse)
         else:
             if cop.parameters != sop.parameters:
@@ -355,7 +359,9 @@ def diff(s, c, u):
 
     dg = build(rst)
     for op in nx.topological_sort(dg):
+
         if 'operation' in dg.node[op]:
+            operation = dg.node[op]['operation']
             print dg.node[op]['operation']
 
 
