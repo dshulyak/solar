@@ -173,6 +173,22 @@ ceph:
     enabled: true
 """)
 
+REMOVED_NODE = yaml.load("""
+env: 2
+nodes:
+    - name: node1
+      role: controller
+      uid: 1
+    - name: node1
+      role: ceph-osd
+      uid: 1
+swift:
+    enabled: false
+    ring_size: 256
+ceph:
+    enabled: true
+""")
+
 
 RULES = {}
 
@@ -310,12 +326,7 @@ def topo(s, c):
         print dg.node[op]['operation']
 
 
-
-@main.command()
-@click.option('-s', default=False, is_flag=True)
-@click.option('-c', default=False, is_flag=True)
-@click.option('-u', default=False, is_flag=True)
-def diff(s, c, u):
+def _diff(s, c, u, r):
     #todo remove this duplication
     if c:
         crules = map(lambda r: r[0](COMMITTED), RULES.values())
@@ -334,6 +345,12 @@ def diff(s, c, u):
 
     if s:
         srules = map(lambda r: r[0](STAGED), RULES.values())
+        sops_hash = {}
+        for rule in srules:
+            for o in rule:
+                sops_hash[o.identity] = o
+    elif r:
+        srules = map(lambda r: r[0](REMOVED_NODE), RULES.values())
         sops_hash = {}
         for rule in srules:
             for o in rule:
@@ -358,12 +375,22 @@ def diff(s, c, u):
                     Update(sop.uid, sop.parameters))
 
     dg = build(rst)
+    ordered_operations = []
     for op in nx.topological_sort(dg):
-
         if 'operation' in dg.node[op]:
             operation = dg.node[op]['operation']
-            print dg.node[op]['operation']
+            ordered_operations.append(dg.node[op]['operation'])
+    return ordered_operations
 
+
+@main.command()
+@click.option('-s', default=False, is_flag=True)
+@click.option('-c', default=False, is_flag=True)
+@click.option('-u', default=False, is_flag=True)
+@click.option('-r', default=False, is_flag=True)
+def diff(s, c, u, r):
+    for operation in _diff(s, c, u, r):
+        print operation
 
 
 if __name__ == '__main__':
