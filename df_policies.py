@@ -90,6 +90,11 @@ class Connect(Operation):
     def inverse(self):
         return Disconnect(self.emitter, self.subscriber, self.parameters)
 
+    @property
+    def identity(self):
+        return '{}_{}_{}'.format(
+            self.operation, self.emitter, self.subscriber)
+
     def __init__(self, emitter, subscriber, parameters=None):
         self.emitter = emitter
         self.subscriber = subscriber
@@ -272,7 +277,14 @@ def build(operations):
     for op in dg.nodes():
         operation = dg.node[op]['operation']
 
-        if isinstance(operation, Connect):
+        if isinstance(operation, Disconnect):
+            dg.add_edge(
+                operation.identity,
+                'REMOVE_%s' % operation.emitter)
+            dg.add_edge(
+                operation.identity,
+                'REMOVE_%s' % operation.subscriber)
+        elif isinstance(operation, Connect):
             dg.add_edge(
                 'ADD_%s' % operation.emitter,
                 operation.identity)
@@ -282,13 +294,6 @@ def build(operations):
         elif isinstance(operation, Update):
             dg.add_edge(
                 'ADD_%s' % operation.uid, operation.identity)
-        elif isinstance(operation, Disconnect):
-            dg.add_edge(
-                operation.identity,
-                'REMOVE_%s' % operation.emitter)
-            dg.add_edge(
-                operation.identity,
-                'REMOVE_%s' % operation.subscriber)
     return dg
 
 
@@ -347,6 +352,7 @@ def diff(s, c, u):
             if cop.parameters != sop.parameters:
                 rst.append(
                     Update(sop.uid, sop.parameters))
+
     dg = build(rst)
     for op in nx.topological_sort(dg):
         if 'operation' in dg.node[op]:
